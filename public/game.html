@@ -366,6 +366,7 @@
         let currentRound = 1;
         let totalRounds = 3;
         let tangoGameInstance = null;
+        let cumulativeTime = 0; // Track cumulative time across rounds
 
         function showScreen(screenName) {
             document.querySelectorAll('.join-screen, .waiting-screen, .countdown-screen, .game-screen, .result-screen, .waiting-round2-screen')
@@ -402,7 +403,7 @@
             // This ensures late-joining players see the correct elapsed time
             startTime = serverStartTime || Date.now();
             timerInterval = setInterval(() => {
-                const elapsed = Date.now() - startTime;
+                const elapsed = cumulativeTime + (Date.now() - startTime);
                 document.getElementById('timer').textContent = formatTime(elapsed);
             }, 100);
         }
@@ -509,6 +510,9 @@
         });
 
         socket.on('solution-correct', (data) => {
+            // Calculate and store elapsed time for this round before stopping
+            const roundElapsed = Date.now() - startTime;
+            cumulativeTime += roundElapsed;
             stopTimer(); // Only stop timer when solution is correct
 
             if (data.round === 1 && data.moveToRound2) {
@@ -559,7 +563,9 @@
                 });
             });
 
-            // Start timer for Round 2
+            // Continue timer for Round 2 (cumulative - includes Round 1 time)
+            // Reset startTime but keep cumulativeTime
+            startTime = Date.now();
             startTimer();
         });
 
@@ -585,7 +591,9 @@
                 });
             });
 
-            // Start timer for Round 3
+            // Continue timer for Round 3 (cumulative - includes Rounds 1+2 time)
+            // Reset startTime but keep cumulativeTime
+            startTime = Date.now();
             startTimer();
         });
 
