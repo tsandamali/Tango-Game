@@ -1,0 +1,613 @@
+﻿// Tango Puzzle Game (Binary Puzzle / Sun-Moon Logic Puzzle)
+class TangoGame {
+  constructor(containerId, puzzle, onSubmit) {
+    this.container = document.getElementById(containerId);
+    this.puzzle = puzzle;
+    this.size = puzzle.size;
+    this.userGrid = puzzle.puzzle.map(row => [...row]);
+    this.givens = puzzle.givens.map(row => [...row]);
+    this.constraints = puzzle.constraints || { horizontal: [], vertical: [] };
+    this.onSubmit = onSubmit;
+    this.moveHistory = [];
+
+    this.init();
+  }
+
+  init() {
+    this.container.innerHTML = '';
+    this.container.className = 'tango-container';
+
+    // Create grid with constraints
+    const gridWrapper = document.createElement('div');
+    gridWrapper.className = 'tango-grid-wrapper';
+
+    const gridContainer = document.createElement('div');
+    gridContainer.className = 'tango-grid';
+    gridContainer.style.gridTemplateColumns = `repeat(${this.size}, 1fr)`;
+    gridContainer.style.gridTemplateRows = `repeat(${this.size}, 1fr)`;
+
+    // Create cells
+    for (let row = 0; row < this.size; row++) {
+      for (let col = 0; col < this.size; col++) {
+        const cell = this.createCell(row, col);
+        gridContainer.appendChild(cell);
+      }
+    }
+
+    gridWrapper.appendChild(gridContainer);
+
+    // Add constraint overlays
+    this.addConstraintOverlays(gridWrapper);
+
+    this.container.appendChild(gridWrapper);
+
+    // Create controls
+    const controls = this.createControls();
+    this.container.appendChild(controls);
+
+    // Add styles
+    this.addStyles();
+  }
+
+  createCell(row, col) {
+    const cell = document.createElement('div');
+    cell.className = 'tango-cell';
+    cell.dataset.row = row;
+    cell.dataset.col = col;
+
+    const isGiven = this.givens[row][col] !== 0;
+    if (isGiven) {
+      cell.classList.add('given');
+    }
+
+    this.updateCellDisplay(cell, this.userGrid[row][col]);
+
+    if (!isGiven) {
+      cell.addEventListener('click', () => {
+        const oldValue = this.userGrid[row][col];
+        const newValue = (oldValue + 1) % 3;
+
+        this.moveHistory.push({ row, col, oldValue, newValue });
+        this.userGrid[row][col] = newValue;
+        this.updateCellDisplay(cell, newValue);
+        this.validatePuzzle();
+      });
+    }
+
+    return cell;
+  }
+
+  updateCellDisplay(cell, value) {
+    cell.innerHTML = '';
+    cell.classList.remove('sun', 'moon', 'empty', 'error');
+
+    if (value === 1) {
+      cell.classList.add('sun');
+      cell.innerHTML = '☀️';
+    } else if (value === 2) {
+      cell.classList.add('moon');
+      cell.innerHTML = '🌙';
+    } else {
+      cell.classList.add('empty');
+    }
+  }
+
+  addConstraintOverlays(gridWrapper) {
+    // Calculate cell size for positioning
+    const cellSize = 60; // Match the CSS cell size
+    const gap = 3; // Match the CSS gap
+    const padding = 3; // Grid padding
+
+    // Add horizontal constraints (= or ×) - between left and right cells
+    if (this.constraints.horizontal) {
+      this.constraints.horizontal.forEach(constraint => {
+        const symbol = document.createElement('div');
+        symbol.className = 'constraint-symbol horizontal';
+        symbol.textContent = constraint.type === 'equal' ? '=' : '×';
+
+        // Position between two horizontal cells
+        const leftPos = padding + constraint.col * (cellSize + gap) + cellSize + gap / 2;
+        const topPos = padding + constraint.row * (cellSize + gap) + cellSize / 2;
+
+        symbol.style.position = 'absolute';
+        symbol.style.left = `${leftPos}px`;
+        symbol.style.top = `${topPos}px`;
+        symbol.style.transform = 'translate(-50%, -50%)';
+
+        gridWrapper.appendChild(symbol);
+      });
+    }
+
+    // Add vertical constraints (= or ×) - between top and bottom cells
+    if (this.constraints.vertical) {
+      this.constraints.vertical.forEach(constraint => {
+        const symbol = document.createElement('div');
+        symbol.className = 'constraint-symbol vertical';
+        symbol.textContent = constraint.type === 'equal' ? '=' : '×';
+
+        // Position between two vertical cells
+        const leftPos = padding + constraint.col * (cellSize + gap) + cellSize / 2;
+        const topPos = padding + constraint.row * (cellSize + gap) + cellSize + gap / 2;
+
+        symbol.style.position = 'absolute';
+        symbol.style.left = `${leftPos}px`;
+        symbol.style.top = `${topPos}px`;
+        symbol.style.transform = 'translate(-50%, -50%)';
+
+        gridWrapper.appendChild(symbol);
+      });
+    }
+  }
+
+  validatePuzzle() {
+    // Clear all errors first
+    document.querySelectorAll('.tango-cell').forEach(cell => {
+      cell.classList.remove('error');
+    });
+
+    let hasErrors = false;
+
+    // Check all rules
+    for (let row = 0; row < this.size; row++) {
+      for (let col = 0; col < this.size; col++) {
+        const symbol = this.userGrid[row][col];
+        if (symbol === 0) continue; // Skip empty cells
+
+        // Check horizontal three-in-a-row
+        if (col <= this.size - 3) {
+          if (this.userGrid[row][col] === symbol &&
+              this.userGrid[row][col + 1] === symbol &&
+              this.userGrid[row][col + 2] === symbol) {
+            this.markError(row, col);
+            this.markError(row, col + 1);
+            this.markError(row, col + 2);
+            hasErrors = true;
+          }
+        }
+
+        // Check vertical three-in-a-row
+        if (row <= this.size - 3) {
+          if (this.userGrid[row][col] === symbol &&
+              this.userGrid[row + 1][col] === symbol &&
+              this.userGrid[row + 2][col] === symbol) {
+            this.markError(row, col);
+            this.markError(row + 1, col);
+            this.markError(row + 2, col);
+            hasErrors = true;
+          }
+        }
+      }
+    }
+
+    // Check constraint violations
+    hasErrors = this.checkConstraints() || hasErrors;
+
+    // Check equal count of suns and moons per row
+    hasErrors = this.checkEqualCounts() || hasErrors;
+
+    return !hasErrors;
+  }
+
+  checkEqualCounts() {
+    let hasErrors = false;
+    const expectedCount = this.size / 2;
+
+    // Check each row
+    for (let row = 0; row < this.size; row++) {
+      let sunCount = 0;
+      let moonCount = 0;
+      let filledCount = 0;
+
+      for (let col = 0; col < this.size; col++) {
+        const value = this.userGrid[row][col];
+        if (value === 1) sunCount++;
+        else if (value === 2) moonCount++;
+        if (value !== 0) filledCount++;
+      }
+
+      // Check if row is completely filled
+      if (filledCount === this.size) {
+        if (sunCount !== expectedCount || moonCount !== expectedCount) {
+          for (let col = 0; col < this.size; col++) {
+            this.markError(row, col);
+          }
+          hasErrors = true;
+        }
+      }
+    }
+
+    // Check each column
+    for (let col = 0; col < this.size; col++) {
+      let sunCount = 0;
+      let moonCount = 0;
+      let filledCount = 0;
+
+      for (let row = 0; row < this.size; row++) {
+        const value = this.userGrid[row][col];
+        if (value === 1) sunCount++;
+        else if (value === 2) moonCount++;
+        if (value !== 0) filledCount++;
+      }
+
+      // Check if column is completely filled
+      if (filledCount === this.size) {
+        if (sunCount !== expectedCount || moonCount !== expectedCount) {
+          for (let row = 0; row < this.size; row++) {
+            this.markError(row, col);
+          }
+          hasErrors = true;
+        }
+      }
+    }
+
+    return hasErrors;
+  }
+
+  checkConstraints() {
+    let hasErrors = false;
+
+    // Check horizontal constraints
+    if (this.constraints.horizontal) {
+      this.constraints.horizontal.forEach(constraint => {
+        const leftVal = this.userGrid[constraint.row][constraint.col];
+        const rightVal = this.userGrid[constraint.row][constraint.col + 1];
+
+        if (leftVal !== 0 && rightVal !== 0) {
+          if (constraint.type === 'equal' && leftVal !== rightVal) {
+            this.markError(constraint.row, constraint.col);
+            this.markError(constraint.row, constraint.col + 1);
+            hasErrors = true;
+          } else if (constraint.type === 'different' && leftVal === rightVal) {
+            this.markError(constraint.row, constraint.col);
+            this.markError(constraint.row, constraint.col + 1);
+            hasErrors = true;
+          }
+        }
+      });
+    }
+
+    // Check vertical constraints
+    if (this.constraints.vertical) {
+      this.constraints.vertical.forEach(constraint => {
+        const topVal = this.userGrid[constraint.row][constraint.col];
+        const bottomVal = this.userGrid[constraint.row + 1][constraint.col];
+
+        if (topVal !== 0 && bottomVal !== 0) {
+          if (constraint.type === 'equal' && topVal !== bottomVal) {
+            this.markError(constraint.row, constraint.col);
+            this.markError(constraint.row + 1, constraint.col);
+            hasErrors = true;
+          } else if (constraint.type === 'different' && topVal === bottomVal) {
+            this.markError(constraint.row, constraint.col);
+            this.markError(constraint.row + 1, constraint.col);
+            hasErrors = true;
+          }
+        }
+      });
+    }
+
+    return hasErrors;
+  }
+
+  markError(row, col) {
+    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    if (cell) {
+      cell.classList.add('error');
+    }
+  }
+
+  createControls() {
+    const controls = document.createElement('div');
+    controls.className = 'tango-controls';
+
+    const instructions = document.createElement('div');
+    instructions.className = 'tango-instructions';
+    instructions.innerHTML = `
+      <h3>How to Play</h3>
+      <ul class="rules-list">
+        <li>Fill the grid with ☀️ (Sun) and 🌙 (Moon)</li>
+        <li>Each row & column must have equal ☀️ and 🌙</li>
+        <li>No more than 2 identical symbols in a row</li>
+        <li><strong>=</strong> symbol means adjacent cells must be SAME</li>
+        <li><strong>×</strong> symbol means adjacent cells must be DIFFERENT</li>
+        <li>Click any cell to cycle: Empty → ☀️ → 🌙</li>
+      </ul>
+    `;
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'button-container';
+
+    const undoBtn = document.createElement('button');
+    undoBtn.className = 'action-btn undo-btn';
+    undoBtn.textContent = '↶ Undo';
+    undoBtn.addEventListener('click', () => this.undo());
+
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'action-btn reset-btn';
+    resetBtn.textContent = '↻ Reset';
+    resetBtn.addEventListener('click', () => this.reset());
+
+    const submitBtn = document.createElement('button');
+    submitBtn.className = 'submit-btn';
+    submitBtn.textContent = 'Submit Solution';
+    submitBtn.addEventListener('click', () => {
+      if (this.isGridComplete()) {
+        if (this.validatePuzzle()) {
+          this.onSubmit(this.userGrid);
+        } else {
+          alert('❌ Puzzle has rule violations! Fix errors (red cells) before submitting.');
+        }
+      } else {
+        alert('⚠️ Please fill all cells before submitting!');
+      }
+    });
+
+    buttonContainer.appendChild(undoBtn);
+    buttonContainer.appendChild(resetBtn);
+
+    controls.appendChild(instructions);
+    controls.appendChild(buttonContainer);
+    controls.appendChild(submitBtn);
+
+    return controls;
+  }
+
+  undo() {
+    if (this.moveHistory.length === 0) {
+      alert('Nothing to undo!');
+      return;
+    }
+
+    const lastMove = this.moveHistory.pop();
+    this.userGrid[lastMove.row][lastMove.col] = lastMove.oldValue;
+
+    const cell = document.querySelector(`[data-row="${lastMove.row}"][data-col="${lastMove.col}"]`);
+    if (cell) {
+      this.updateCellDisplay(cell, lastMove.oldValue);
+    }
+
+    this.validatePuzzle();
+  }
+
+  reset() {
+    if (confirm('Are you sure you want to reset the puzzle? All progress will be lost.')) {
+      this.moveHistory = [];
+
+      for (let row = 0; row < this.size; row++) {
+        for (let col = 0; col < this.size; col++) {
+          if (this.givens[row][col] === 0) {
+            this.userGrid[row][col] = 0;
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            if (cell) {
+              this.updateCellDisplay(cell, 0);
+            }
+          }
+        }
+      }
+
+      this.validatePuzzle();
+    }
+  }
+
+  isGridComplete() {
+    for (let row = 0; row < this.size; row++) {
+      for (let col = 0; col < this.size; col++) {
+        if (this.userGrid[row][col] === 0) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  addStyles() {
+    if (document.getElementById('tango-game-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'tango-game-styles';
+    style.textContent = `
+      .tango-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        padding: 20px;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .tango-grid-wrapper {
+        position: relative;
+        display: inline-block;
+      }
+
+      .tango-grid {
+        display: grid;
+        gap: 3px;
+        background: #e0e0e0;
+        padding: 3px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .tango-cell {
+        width: 60px;
+        height: 60px;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border: 2px solid transparent;
+      }
+
+      .tango-cell:hover:not(.given) {
+        background: #f8f8f8;
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .tango-cell.given {
+        background: #f5f5f5;
+        cursor: not-allowed;
+        font-weight: bold;
+      }
+
+      .tango-cell.error {
+        background: #ffebee !important;
+        border-color: #f44336 !important;
+        animation: shake 0.3s;
+      }
+
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-3px); }
+        75% { transform: translateX(3px); }
+      }
+
+      .constraint-symbol {
+        position: absolute;
+        pointer-events: none;
+        font-size: 20px;
+        font-weight: bold;
+        color: #444;
+        background: white;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        z-index: 100;
+      }
+
+      .tango-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        width: 100%;
+        max-width: 500px;
+      }
+
+      .tango-instructions {
+        background: #f8f9ff;
+        padding: 24px;
+        border-radius: 12px;
+        border: 2px solid #e8ebff;
+        text-align: left;
+      }
+
+      .tango-instructions h3 {
+        margin: 0 0 12px 0;
+        color: #333;
+        font-size: 1.3rem;
+        font-weight: 600;
+        text-align: center;
+      }
+
+      .rules-list {
+        margin: 12px 0;
+        padding-left: 24px;
+        list-style: disc;
+      }
+
+      .rules-list li {
+        margin: 8px 0;
+        color: #555;
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+
+      .rules-list li strong {
+        color: #333;
+        font-weight: 700;
+      }
+
+      .button-container {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      .action-btn {
+        flex: 1;
+        padding: 12px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      }
+
+      .undo-btn {
+        background: #ff9800;
+      }
+
+      .undo-btn:hover {
+        background: #f57c00;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(255, 152, 0, 0.3);
+      }
+
+      .reset-btn {
+        background: #f44336;
+      }
+
+      .reset-btn:hover {
+        background: #d32f2f;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(244, 67, 54, 0.3);
+      }
+
+      .action-btn:active {
+        transform: translateY(0);
+      }
+
+      .submit-btn {
+        padding: 15px 30px;
+        font-size: 18px;
+        font-weight: bold;
+        color: white;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+      }
+
+      .submit-btn:active {
+        transform: translateY(0);
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+  // Allow external highlighting of validation errors from server
+  highlightErrors(errors) {
+    // Clear previous errors
+    document.querySelectorAll('.tango-cell').forEach(cell => cell.classList.remove('error'));
+    if (!Array.isArray(errors)) return;
+    errors.forEach(e => {
+      this.markError(e.row, e.col);
+    });
+  }
+}
+
+// Export for use in game.html
+window.TangoGame = TangoGame;
