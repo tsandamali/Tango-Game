@@ -300,20 +300,7 @@ class TangoGame {
     const controls = document.createElement('div');
     controls.className = 'tango-controls';
 
-    const instructions = document.createElement('div');
-    instructions.className = 'tango-instructions';
-    instructions.innerHTML = `
-      <h3>How to Play</h3>
-      <ul class="rules-list">
-        <li>Fill the grid with ☀️ (Sun) and 🌙 (Moon)</li>
-        <li>Each row & column must have equal ☀️ and 🌙</li>
-        <li>No more than 2 identical symbols in a row</li>
-        <li><strong>=</strong> symbol means adjacent cells must be SAME</li>
-        <li><strong>×</strong> symbol means adjacent cells must be DIFFERENT</li>
-        <li>Click any cell to cycle: Empty → ☀️ → 🌙</li>
-      </ul>
-    `;
-
+    // Button container - placed before instructions (between grid and how to play)
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'button-container';
 
@@ -328,8 +315,8 @@ class TangoGame {
     resetBtn.addEventListener('click', () => this.reset());
 
     const submitBtn = document.createElement('button');
-    submitBtn.className = 'submit-btn';
-    submitBtn.textContent = 'Submit Solution';
+    submitBtn.className = 'action-btn submit-btn';
+    submitBtn.textContent = '✓ Submit';
     submitBtn.addEventListener('click', () => {
       if (this.isGridComplete()) {
         if (this.validatePuzzle()) {
@@ -344,10 +331,25 @@ class TangoGame {
 
     buttonContainer.appendChild(undoBtn);
     buttonContainer.appendChild(resetBtn);
+    buttonContainer.appendChild(submitBtn);
 
-    controls.appendChild(instructions);
+    const instructions = document.createElement('div');
+    instructions.className = 'tango-instructions';
+    instructions.innerHTML = `
+      <h3>How to Play</h3>
+      <ul class="rules-list">
+        <li>Fill the grid with ☀️ (Sun) and 🌙 (Moon)</li>
+        <li>Each row & column must have equal ☀️ and 🌙</li>
+        <li>No more than 2 identical symbols in a row</li>
+        <li><strong>=</strong> symbol means adjacent cells must be SAME</li>
+        <li><strong>×</strong> symbol means adjacent cells must be DIFFERENT</li>
+        <li>Click any cell to cycle: Empty → ☀️ → 🌙</li>
+      </ul>
+    `;
+
+    // Add buttons first, then instructions
     controls.appendChild(buttonContainer);
-    controls.appendChild(submitBtn);
+    controls.appendChild(instructions);
 
     return controls;
   }
@@ -573,25 +575,13 @@ class TangoGame {
       }
 
       .submit-btn {
-        padding: 15px 30px;
-        font-size: 18px;
-        font-weight: bold;
-        color: white;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
       }
 
       .submit-btn:hover {
+        background: linear-gradient(135deg, #43a047 0%, #1b5e20 100%);
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
-      }
-
-      .submit-btn:active {
-        transform: translateY(0);
+        box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
       }
     `;
 

@@ -14,10 +14,10 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: #f5f5f5;
-            min-height: 100vh;
+            min-height: auto;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             padding: 20px;
         }
 
@@ -149,10 +149,12 @@
         }
 
         .puzzle-container {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            min-height: 60vh;
+            margin: 20px 0;
             padding: 20px;
             background: #f8f9fa;
             border-radius: 10px;
@@ -251,15 +253,18 @@
             border-radius: 8px;
         }
 
-        .game-screen {
+        .game-screen.active {
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         #tango-game-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 30px auto;
+            width: 100%;
         }
     </style>
 </head>
@@ -299,10 +304,7 @@
 
         <!-- Game Screen -->
         <div class="game-screen">
-            <div class="player-info">
-                <strong>Player:</strong> <span id="player-name-display"></span>
-            </div>
-            <div class="timer" id="timer">00:00.00</div>
+            <div class="timer" id="timer">00:00</div>
             <div class="puzzle-container" id="puzzle-container"></div>
             <div id="error-container"></div>
         </div>
@@ -395,12 +397,14 @@
             socket.emit('join-game', { gameId, playerName, isAdmin: false });
         }
 
-        function startTimer() {
-            startTime = Date.now();
+        function startTimer(serverStartTime) {
+            // If serverStartTime is provided, use it to calculate elapsed time
+            // This ensures late-joining players see the correct elapsed time
+            startTime = serverStartTime || Date.now();
             timerInterval = setInterval(() => {
                 const elapsed = Date.now() - startTime;
                 document.getElementById('timer').textContent = formatTime(elapsed);
-            }, 10);
+            }, 100);
         }
 
         function stopTimer() {
@@ -411,10 +415,11 @@
         }
 
         function formatTime(ms) {
-            const totalSeconds = ms / 1000;
+            // Display time in seconds only (no milliseconds)
+            const totalSeconds = Math.floor(ms / 1000);
             const minutes = Math.floor(totalSeconds / 60);
-            const seconds = (totalSeconds % 60).toFixed(2);
-            return `${minutes.toString().padStart(2, '0')}:${seconds.padStart(5, '0')}`;
+            const seconds = totalSeconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
         function showError(message) {
@@ -429,7 +434,6 @@
         socket.on('game-joined', (data) => {
             playerId = data.playerId;
             sessionStorage.setItem('playerId', playerId);
-            document.getElementById('player-name-display').textContent = playerName;
             updateRoundIndicator(data.currentRound || 1, data.totalRounds || 2);
             showScreen('waiting-screen');
             document.getElementById('waiting-player-count').textContent = data.playerCount;
@@ -485,7 +489,9 @@
                 });
             });
 
-            startTimer();
+            // Pass server start time if available (for late-joining players)
+            // This ensures the timer shows the correct elapsed time from when the round started
+            startTimer(data.roundStartTime);
         });
 
         socket.on('solution-incorrect', (data) => {
@@ -602,7 +608,6 @@
         if (storedPlayerId && storedPlayerName) {
             playerId = storedPlayerId;
             playerName = storedPlayerName;
-            document.getElementById('player-name-display').textContent = playerName;
             socket.emit('join-game', { gameId, playerName, isAdmin: false });
         }
     </script>

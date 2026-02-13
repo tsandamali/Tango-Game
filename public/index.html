@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tango Puzzle Game</title>
+    <title>Tango Puzzle Game - Admin Panel</title>
     <style>
         * {
             margin: 0;
@@ -15,77 +15,418 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 20px;
         }
 
         .container {
+            max-width: 1200px;
+            margin: 0 auto;
             background: white;
             border-radius: 15px;
-            padding: 60px 40px;
+            padding: 30px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
         }
 
         h1 {
-            color: #667eea;
-            font-size: 2.5rem;
-            margin-bottom: 20px;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
         }
 
-        p {
-            color: #666;
-            font-size: 1.1rem;
-            margin-bottom: 40px;
-        }
-
-        .btn {
-            display: block;
-            width: 100%;
+        .section {
+            margin-bottom: 30px;
             padding: 20px;
-            margin: 15px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
             background: #667eea;
             color: white;
-            text-decoration: none;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            transition: transform 0.2s, background 0.3s;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
         }
 
-        .btn:hover {
+        button:hover {
             background: #5568d3;
-            transform: translateY(-2px);
         }
 
-        .btn-secondary {
-            background: #764ba2;
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
 
-        .btn-secondary:hover {
-            background: #653a8a;
+        .info-box {
+            padding: 15px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            border-radius: 5px;
+            margin-bottom: 15px;
         }
 
-        .icon {
-            font-size: 3rem;
+        .success-box {
+            padding: 15px;
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .game-link {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            word-break: break-all;
+        }
+
+        .game-link a {
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-active {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
             margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            color: #667eea;
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .copy-btn {
+            background: #4caf50;
+            margin-left: 10px;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+
+        .copy-btn:hover {
+            background: #388e3c;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="icon">🎯</div>
-        <h1>Tango Puzzle Game</h1>
-        <p>Multi-player online puzzle competition</p>
+        <h1>🎮 Tango Puzzle Game - Admin Panel</h1>
 
-        <a href="/admin.html" class="btn">🎮 Admin Panel</a>
-        <a href="#" class="btn btn-secondary" onclick="alert('Please use the game link provided by your admin'); return false;">
-            👥 Join Game
-        </a>
+        <!-- Create Game Section -->
+        <div id="create-section" class="section">
+            <h2>Create New Game</h2>
+            <div class="info-box">
+                <p>Game will start with a 4×4 Tango puzzle, followed by 6×6 and 8×8 rounds</p>
+            </div>
+            <button onclick="createGame()">Create Game</button>
+        </div>
+
+        <!-- Game Control Section -->
+        <div id="control-section" class="section hidden">
+            <h2>Game Control</h2>
+            <div class="success-box">
+                <strong>Game Created Successfully!</strong>
+                <div class="game-link">
+                    <strong>Player Join Link:</strong><br>
+                    <a id="join-link" href="#" target="_blank"></a>
+                    <button class="copy-btn" onclick="copyLink()">Copy Link</button>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <h3 id="player-count">0</h3>
+                    <p>Players Joined</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="completed-count">0</h3>
+                    <p>Completed</p>
+                </div>
+                <div class="stat-card">
+                    <h3><span class="status-badge" id="game-status">Waiting</span></h3>
+                    <p>Game Status</p>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button id="start-btn" onclick="startGame()">Start Game</button>
+            </div>
+            <div id="round-status" class="info-box" style="display: none; margin-top: 15px;">
+                <strong>Game includes 3 rounds:</strong> 4×4, 6×6, and 8×8 Tango puzzles
+            </div>
+        </div>
+
+        <!-- Leaderboard Section -->
+        <div id="leaderboard-section" class="section hidden">
+            <h2>Live Leaderboard (Ranked by Lowest Time)</h2>
+            <table id="leaderboard">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player Name</th>
+                        <th>Status</th>
+                        <th>Total Time</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #999;">No players yet</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // Use same origin for Socket.IO connection (works on Render and localhost)
+        const socket = io(window.location.origin);
+        let currentGameId = null;
+
+        function createGame() {
+            fetch('/api/admin/create-game', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                currentGameId = data.gameId;
+                const joinUrl = `${window.location.origin}${data.joinLink}`;
+
+                document.getElementById('join-link').href = joinUrl;
+                document.getElementById('join-link').textContent = joinUrl;
+
+                document.getElementById('create-section').classList.add('hidden');
+                document.getElementById('control-section').classList.remove('hidden');
+                document.getElementById('leaderboard-section').classList.remove('hidden');
+
+                socket.emit('join-game', { gameId: currentGameId, isAdmin: true });
+                startPolling();
+            })
+            .catch(err => alert('Error creating game: ' + err.message));
+        }
+
+        function startGame() {
+            if (!currentGameId) return;
+
+            fetch(`/api/admin/start-game/${currentGameId}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('start-btn').disabled = true;
+                    document.getElementById('round-status').style.display = 'block';
+                }
+            })
+            .catch(err => alert('Error starting game: ' + err.message));
+        }
+
+        function exportResults() {
+            if (!currentGameId) return;
+            window.location.href = `/api/admin/export/${currentGameId}`;
+        }
+
+        function copyLink() {
+            const joinLink = document.getElementById('join-link').href;
+            navigator.clipboard.writeText(joinLink).then(() => {
+                // Link copied silently
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = joinLink;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            });
+        }
+
+        function updateLeaderboard() {
+            if (!currentGameId) return;
+
+            fetch(`/api/admin/game/${currentGameId}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('player-count').textContent = data.playerCount;
+                document.getElementById('completed-count').textContent =
+                    data.players.filter(p => p.status === 'completed').length;
+
+                const statusBadge = document.getElementById('game-status');
+                const status = data.status || 'waiting';
+                statusBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                statusBadge.className = 'status-badge status-' + status;
+
+                if (status !== 'waiting') {
+                    document.getElementById('start-btn').disabled = true;
+                }
+
+                const tbody = document.getElementById('leaderboard-body');
+                if (data.players.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No players yet</td></tr>';
+                    return;
+                }
+
+                // Sort players by time (lowest time first) and assign ranks
+                const sortedPlayers = [...data.players].sort((a, b) => {
+                    const timeA = a.displayCompletionTime || Infinity;
+                    const timeB = b.displayCompletionTime || Infinity;
+                    return timeA - timeB;
+                });
+
+                tbody.innerHTML = sortedPlayers.map((p, index) => {
+                    const timeMs = p.completionTime || p.displayCompletionTime || p.totalTime || null;
+                    const time = timeMs ? formatTime(timeMs) : '-';
+
+                    const rawStatus = p.status || 'waiting';
+                    const displayStatus = p.displayStatus || (rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1));
+
+                    // Normalize class to one of waiting/active/completed
+                    let baseClass = 'waiting';
+                    if (rawStatus.includes('completed')) baseClass = 'completed';
+                    else if (rawStatus.includes('active')) baseClass = 'active';
+
+                    const statusClass = 'status-' + baseClass;
+
+                    // Assign rank based on position (only for completed players)
+                    let rank = '-';
+                    if (rawStatus.includes('completed') && timeMs) {
+                        rank = index + 1;
+                    }
+
+                    return `
+                        <tr>
+                            <td>${rank}</td>
+                            <td>${p.name}</td>
+                            <td><span class="status-badge ${statusClass}">${displayStatus}</span></td>
+                            <td>${time}</td>
+                        </tr>
+                    `;
+                }).join('');
+            });
+        }
+
+        function formatTime(ms) {
+            // Leaderboard shows milliseconds for precision
+            const seconds = (ms / 1000).toFixed(2);
+            const mins = Math.floor(seconds / 60);
+            const secs = (seconds % 60).toFixed(2);
+            return `${mins}:${secs.padStart(5, '0')}`;
+        }
+
+        function startPolling() {
+            updateLeaderboard();
+            setInterval(updateLeaderboard, 2000);
+        }
+
+        socket.on('player-joined', (data) => {
+            updateLeaderboard();
+        });
+
+        socket.on('player-completed', (data) => {
+            updateLeaderboard();
+        });
+
+        socket.on('countdown-start', (data) => {
+            alert(`Countdown started! Game will begin in ${data.seconds} seconds.`);
+        });
+    </script>
 </body>
 </html>

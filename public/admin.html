@@ -237,8 +237,6 @@
 
             <div class="btn-group">
                 <button id="start-btn" onclick="startGame()">Start Game</button>
-                <button onclick="exportResults()">Export Results (CSV)</button>
-                <button onclick="refreshLeaderboard()">Refresh Leaderboard</button>
             </div>
             <div id="round-status" class="info-box" style="display: none; margin-top: 15px;">
                 <strong>Game includes 3 rounds:</strong> 4×4, 6×6, and 8×8 Tango puzzles
@@ -304,7 +302,6 @@
                 if (data.success) {
                     document.getElementById('start-btn').disabled = true;
                     document.getElementById('round-status').style.display = 'block';
-                    alert('Game starting! Countdown initiated.');
                 }
             })
             .catch(err => alert('Error starting game: ' + err.message));

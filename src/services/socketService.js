@@ -77,12 +77,13 @@ class SocketService {
       playerName: player.name
     });
 
-    // If game is already active, send puzzle
+    // If game is already active, send puzzle with start time for elapsed time calculation
     const currentRound = game.currentRound;
     if (game.status.includes('active') && game.rounds[currentRound].puzzle) {
       socket.emit('game-start', {
         puzzle: game.rounds[currentRound].puzzle,
-        round: currentRound
+        round: currentRound,
+        roundStartTime: game.rounds[currentRound].startTime // Send start time for elapsed time calculation
       });
     }
   }

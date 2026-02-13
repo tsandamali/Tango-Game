@@ -24,6 +24,11 @@ app.get('/game/:gameId', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'game.html'));
 });
 
+// Redirect /admin.html to home page (admin panel is now the home page)
+app.get('/admin.html', (req, res) => {
+  res.redirect('/');
+});
+
 app.use('/api/admin', createAdminRoutes(io));
 
 // Health check endpoint

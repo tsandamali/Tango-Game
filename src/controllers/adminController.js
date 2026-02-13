@@ -30,23 +30,36 @@ class AdminController {
         status: p.status === 'completed' ? 'completed' : p.status,
         displayStatus: p.displayStatus || (p.status ? p.status : 'Waiting'),
         completionTime: p.displayCompletionTime, // ms or null
+        totalTime: p.totalTime || null,
         rank: p.totalRank || p.rank || null,
-        round2Rank: p.round2Rank || null,
-        totalTime: p.totalTime || null
+        round2Rank: p.round2Rank || null
       }));
 
       const completedCount = players.filter(p => p.status === 'completed').length;
+
+      // Sort players: completed first (sorted by lowest time), then others
+      const sortedPlayers = players.sort((a, b) => {
+        // Completed players come first, sorted by time (lowest first = rank 1)
+        const aTime = a.totalTime || a.completionTime;
+        const bTime = b.totalTime || b.completionTime;
+        
+        // If both have times, sort by time (ascending - lowest first)
+        if (aTime && bTime) {
+          return aTime - bTime;
+        }
+        // If only one has time, that one comes first
+        if (aTime) return -1;
+        if (bTime) return 1;
+        // If neither has time, maintain original order
+        return 0;
+      });
 
       res.json({
         gameId: game.id,
         status: game.status,
         playerCount: game.players.size,
         completedCount,
-        players: players.sort((a, b) => {
-          const ta = a.completionTime || Infinity;
-          const tb = b.completionTime || Infinity;
-          return ta - tb;
-        })
+        players: sortedPlayers
       });
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch game' });
@@ -89,32 +102,47 @@ class AdminController {
         return res.status(404).json({ error: 'Game not found' });
       }
 
-      const players = Array.from(game.players.values())
-          .map(player => {
-            const r1 = player.completionTime || 0;
-            const r2 = player.round2CompletionTime || 0;
-            const r3 = player.round3CompletionTime || 0;
+      // Get all players and calculate total times
+      const allPlayers = Array.from(game.players.values()).map(player => {
+        const r1 = player.completionTime || 0;
+        const r2 = player.round2CompletionTime || 0;
+        const r3 = player.round3CompletionTime || 0;
+        const totalTime = r1 + r2 + r3;
 
-            const totalTime = r1 + r2 + r3;
+        return {
+          ...player,
+          r1,
+          r2,
+          r3,
+          calculatedTotalTime: totalTime
+        };
+      });
 
-            return {
-              ...player,
-              calculatedTotalTime: totalTime
-            };
-          })
-          .filter(p => p.calculatedTotalTime > 0)
-          .sort((a, b) => a.calculatedTotalTime - b.calculatedTotalTime);
+      // Sort all players by total time (lowest first = rank 1)
+      const sortedPlayers = allPlayers.sort((a, b) => {
+        const aTime = a.calculatedTotalTime || Infinity;
+        const bTime = b.calculatedTotalTime || Infinity;
+        return aTime - bTime;
+      });
 
+      // Assign ranks based on sorted position
       let csv = 'Final Rank,Player Name,Round 1 (s),Round 2 (s),Round 3 (s),Total Time (s),Status\n';
-      players.forEach((player) => {
-        const r1Time = player.completionTime ? (player.completionTime / 1000).toFixed(2) : 'N/A';
-        const r2Time = player.round2CompletionTime ? (player.round2CompletionTime / 1000).toFixed(2) : 'N/A';
-        const r3Time = player.round3CompletionTime ? (player.round3CompletionTime / 1000).toFixed(2) : 'N/A';
-        const totalTime = player.calculatedTotalTime
+      
+      sortedPlayers.forEach((player, index) => {
+        const r1Time = player.r1 ? (player.r1 / 1000).toFixed(2) : 'N/A';
+        const r2Time = player.r2 ? (player.r2 / 1000).toFixed(2) : 'N/A';
+        const r3Time = player.r3 ? (player.r3 / 1000).toFixed(2) : 'N/A';
+        const totalTime = player.calculatedTotalTime > 0
             ? (player.calculatedTotalTime / 1000).toFixed(2)
             : 'Incomplete';
-        const finalRank = player.totalRank || 'N/A';
-        const status = player.round3Status === 'completed' ? 'Completed All' : 'In Progress';
+        
+        // Rank is based on position in sorted array (index + 1)
+        // Only assign rank to players who have completed
+        const finalRank = player.calculatedTotalTime > 0 ? (index + 1) : 'N/A';
+        
+        const status = player.round3Status === 'completed' ? 'Completed All' : 
+                       player.round2Status === 'completed' ? 'Round 2 Completed' :
+                       player.status === 'completed' ? 'Round 1 Completed' : 'In Progress';
 
         csv += `${finalRank},${player.name},${r1Time},${r2Time},${r3Time},${totalTime},${status}\n`;
       });
