@@ -525,16 +525,12 @@
                 // Round 3 completed - show final results with TOTAL time
                 showScreen('result-screen');
 
-                // Update UI to show total time and rank
+                // Update UI to show total time only
                 document.getElementById('final-results-container').innerHTML = `
-                    <div class="result-stats">
+                    <div class="result-stats" style="display: flex; justify-content: center; align-items: center;">
                         <div class="stat">
                             <h3>${formatTime(data.totalTime)}</h3>
                             <p>Total Time (All Rounds)</p>
-                        </div>
-                        <div class="stat">
-                            <h3>#${data.totalRank || data.rank}</h3>
-                            <p>Final Rank</p>
                         </div>
                     </div>
                 `;
