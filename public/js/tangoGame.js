@@ -338,12 +338,12 @@ class TangoGame {
     instructions.innerHTML = `
       <h3>How to Play</h3>
       <ul class="rules-list">
-        <li>Fill the grid with ☀️ (Sun) and 🌙 (Moon)</li>
-        <li>Each row & column must have equal ☀️ and 🌙</li>
+        <li>Fill the grid with ☀️ (Sun) and <span class="blue-moon">🌙</span> (Moon)</li>
+        <li>Each row & column must have equal ☀️ and <span class="blue-moon">🌙</span></li>
         <li>No more than 2 identical symbols in a row</li>
         <li><strong>=</strong> symbol means adjacent cells must be SAME</li>
         <li><strong>×</strong> symbol means adjacent cells must be DIFFERENT</li>
-        <li>Click any cell to cycle: Empty → ☀️ → 🌙</li>
+        <li>Click any cell to cycle: Empty → ☀️ → <span class="blue-moon">🌙</span></li>
       </ul>
     `;
 
@@ -458,6 +458,15 @@ class TangoGame {
         background: #f5f5f5;
         cursor: not-allowed;
         font-weight: bold;
+      }
+
+      .tango-cell.moon {
+        filter: hue-rotate(210deg) saturate(2);
+      }
+
+      .blue-moon {
+        filter: hue-rotate(210deg) saturate(2);
+        display: inline-block;
       }
 
       .tango-cell.error {
