@@ -54,6 +54,15 @@ class AdminController {
         return 0;
       });
 
+      // Re-assign ranks based on sorted position for completed players
+      // This ensures the rank matches the display order when a faster player finishes later
+      let rankCounter = 1;
+      sortedPlayers.forEach((player) => {
+        if (player.status === 'completed') {
+          player.rank = rankCounter++;
+        }
+      });
+
       res.json({
         gameId: game.id,
         status: game.status,
